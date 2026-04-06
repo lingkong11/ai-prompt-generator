@@ -7,12 +7,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
  * 提示词生成服务
+ * 
+ * 优化版本：
+ * 1. 支持真实大模型API调用（DeepSeek/OpenAI）
+ * 2. 完善错误处理和日志
+ * 3. 支持测试接口真实调用
  */
 @Slf4j
 @Service
@@ -27,8 +35,16 @@ public class PromptService {
     @Value("${ai.model:deepseek-chat}")
     private String model;
     
+    @Value("${ai.api.timeout:30000}")
+    private int apiTimeout;
+    
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    
+    // 统计信息
+    private int totalCalls = 0;
+    private int successCalls = 0;
+    private int fallbackCalls = 0;
     
     public PromptService() {
         this.restTemplate = new RestTemplate();
@@ -36,51 +52,81 @@ public class PromptService {
     }
     
     /**
-     * 生成提示词
+     * 检查API是否已配置
+     */
+    public boolean isApiConfigured() {
+        return apiKey != null && !apiKey.isEmpty() && !apiKey.equals("${DP_AI_API_KEY:}");
+    }
+    
+    /**
+     * 生成提示词（主入口）
      */
     public String generatePrompt(String goal, String type, String style, String language) {
+        long startTime = System.currentTimeMillis();
+        totalCalls++;
+        
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
+        log.info("[时间戳:{}] [阶段:Service] [任务:生成提示词] [动作:generate] - 目标:{} 类型:{} API配置:{}", 
+            timestamp, goal, type, isApiConfigured());
+        
         String systemPrompt = buildSystemPrompt(type);
         String userPrompt = buildUserPrompt(goal, type, style, language);
         
-        if (apiKey != null && !apiKey.isEmpty()) {
-            return generateWithAI(systemPrompt, userPrompt);
+        if (isApiConfigured()) {
+            try {
+                String result = generateWithAI(systemPrompt, userPrompt);
+                successCalls++;
+                long duration = System.currentTimeMillis() - startTime;
+                log.info("[时间戳:{}] [阶段:Service] [任务:AI生成完成] [动作:success] - 耗时:{}ms", 
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")), duration);
+                return result;
+            } catch (Exception e) {
+                fallbackCalls++;
+                log.warn("[时间戳:{}] [阶段:Service] [任务:AI生成失败] [动作:fallback] - 错误:{}", 
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")), e.getMessage());
+                return generateLocalPrompt(goal, type, style, language);
+            }
         }
         
+        log.info("[时间戳:{}] [阶段:Service] [任务:使用本地模板] [动作:local]", 
+            LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")));
         return generateLocalPrompt(goal, type, style, language);
     }
     
-    private String buildSystemPrompt(String type) {
-        if ("writing".equals(type)) {
-            return "你是一个专业的写作助手，擅长创建清晰、精确的提示词来引导AI生成高质量内容。";
-        } else if ("coding".equals(type)) {
-            return "你是一个编程专家，擅长创建技术精确的代码提示词。";
-        } else if ("analysis".equals(type)) {
-            return "你是一个数据分析专家，擅长创建分析任务提示词。";
-        } else if ("agent".equals(type)) {
-            return "你是一个AI工作流专家，擅长创建可执行的Agent任务提示词。";
-        } else {
-            return "你是一个提示词专家，擅长创建高效的AI提示词。";
-        }
-    }
-    
-    private String buildUserPrompt(String goal, String type, String style, String language) {
-        String lang = "中文";
-        if ("en".equals(language)) lang = "英文";
+    /**
+     * 测试提示词（真实调用大模型）
+     */
+    public Map<String, Object> testPrompt(String prompt) {
+        long startTime = System.currentTimeMillis();
+        Map<String, Object> result = new LinkedHashMap<>();
         
-        return String.format("请为以下目标生成一个优化的AI提示词：\n\n目标：%s\n类型：%s\n风格：%s\n语言：%s\n\n要求：\n1. 提示词要详细、具体、可执行\n2. 包含角色定义、任务描述、输出格式要求\n3. 适当加入约束条件和示例\n4. 输出格式应为可直接使用的提示词文本", goal, type, style, lang);
-    }
-    
-    private String generateWithAI(String systemPrompt, String userPrompt) {
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
+        result.put("timestamp", timestamp);
+        result.put("prompt", prompt);
+        result.put("apiConfigured", isApiConfigured());
+        result.put("model", model);
+        result.put("apiUrl", apiUrl);
+        
+        if (!isApiConfigured()) {
+            result.put("status", "error");
+            result.put("error", "API密钥未配置，请设置环境变量 DP_AI_API_KEY 或在 application.yml 中配置 ai.api.key");
+            result.put("suggestion", "示例: export DP_AI_API_KEY=sk-xxxxx 或在 application.yml 中设置 ai.api.key: sk-xxxxx");
+            return result;
+        }
+        
         try {
-            Map<String, Object> requestBody = new HashMap<>();
-            
+            // 构建测试请求
+            Map<String, Object> requestBody = new LinkedHashMap<>();
             List<Map<String, String>> messages = new ArrayList<>();
-            messages.add(new HashMap<String, String>() {{ put("role", "system"); put("content", systemPrompt); }});
-            messages.add(new HashMap<String, String>() {{ put("role", "user"); put("content", userPrompt); }});
+            messages.add(new LinkedHashMap<String, String>() {{ 
+                put("role", "user"); 
+                put("content", prompt); 
+            }});
             
             requestBody.put("messages", messages);
             requestBody.put("model", model);
             requestBody.put("temperature", 0.7);
+            requestBody.put("max_tokens", 2000);
             
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -88,37 +134,154 @@ public class PromptService {
             
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
             
+            log.info("[时间戳:{}] [阶段:Service] [任务:测试提示词] [动作:调用AI] - 模型:{}", timestamp, model);
+            
             ResponseEntity<String> response = restTemplate.postForEntity(apiUrl, request, String.class);
             
             JsonNode root = objectMapper.readTree(response.getBody());
             JsonNode choices = root.get("choices");
             
             if (choices != null && choices.isArray() && choices.size() > 0) {
-                return choices.get(0).get("message").get("content").asText();
+                String content = choices.get(0).get("message").get("content").asText();
+                
+                // 提取usage信息
+                JsonNode usage = root.get("usage");
+                int promptTokens = usage != null && usage.has("prompt_tokens") ? usage.get("prompt_tokens").asInt() : 0;
+                int completionTokens = usage != null && usage.has("completion_tokens") ? usage.get("completion_tokens").asInt() : 0;
+                int totalTokens = usage != null && usage.has("total_tokens") ? usage.get("total_tokens").asInt() : 0;
+                
+                long duration = System.currentTimeMillis() - startTime;
+                
+                result.put("status", "success");
+                result.put("result", content);
+                result.put("duration", duration + "ms");
+                result.put("usage", Map.of(
+                    "prompt_tokens", promptTokens,
+                    "completion_tokens", completionTokens,
+                    "total_tokens", totalTokens
+                ));
+                
+                log.info("[时间戳:{}] [阶段:Service] [任务:测试完成] [动作:success] - 耗时:{}ms Tokens:{}", 
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")), duration, totalTokens);
+            } else {
+                result.put("status", "error");
+                result.put("error", "API返回格式异常");
+                result.put("rawResponse", response.getBody());
             }
             
-            return generateLocalPrompt("", "general", "专业", "zh");
-            
+        } catch (RestClientException e) {
+            result.put("status", "error");
+            result.put("error", "API调用失败: " + e.getMessage());
+            result.put("errorType", e.getClass().getSimpleName());
+            log.error("[时间戳:{}] [阶段:Service] [任务:测试失败] [动作:error] - {}", 
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")), e.getMessage());
         } catch (Exception e) {
-            log.warn("[时间戳:{}] [阶段:Service] [任务:AI生成] [动作:fallback] - 错误:{}", System.currentTimeMillis(), e.getMessage());
-            return generateLocalPrompt("", "general", "专业", "zh");
+            result.put("status", "error");
+            result.put("error", "处理异常: " + e.getMessage());
+            result.put("errorType", e.getClass().getSimpleName());
+            log.error("[时间戳:{}] [阶段:Service] [任务:测试失败] [动作:error] - {}", 
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")), e.getMessage());
         }
+        
+        return result;
+    }
+    
+    /**
+     * 获取服务统计信息
+     */
+    public Map<String, Object> getStats() {
+        return Map.of(
+            "totalCalls", totalCalls,
+            "successCalls", successCalls,
+            "fallbackCalls", fallbackCalls,
+            "apiConfigured", isApiConfigured(),
+            "model", model,
+            "apiUrl", apiUrl
+        );
+    }
+    
+    // ==================== 私有方法 ====================
+    
+    private String buildSystemPrompt(String type) {
+        Map<String, String> systemPrompts = Map.of(
+            "writing", "你是一个专业的写作助手，擅长创建清晰、精确的提示词来引导AI生成高质量内容。请直接输出优化后的提示词，不要添加额外说明。",
+            "coding", "你是一个编程专家，擅长创建技术精确的代码提示词。请直接输出优化后的提示词，不要添加额外说明。",
+            "analysis", "你是一个数据分析专家，擅长创建分析任务提示词。请直接输出优化后的提示词，不要添加额外说明。",
+            "agent", "你是一个AI工作流专家，擅长创建可执行的Agent任务提示词。请直接输出优化后的提示词，不要添加额外说明。"
+        );
+        return systemPrompts.getOrDefault(type, "你是一个提示词专家，擅长创建高效的AI提示词。请直接输出优化后的提示词，不要添加额外说明。");
+    }
+    
+    private String buildUserPrompt(String goal, String type, String style, String language) {
+        String lang = "en".equals(language) ? "英文" : "中文";
+        String typeDesc = Map.of(
+            "writing", "写作",
+            "coding", "编程",
+            "analysis", "分析",
+            "agent", "AI Agent工作流"
+        ).getOrDefault(type, "通用");
+        
+        return String.format("""
+            请为以下目标生成一个优化的AI提示词：
+            
+            【目标】%s
+            【类型】%s
+            【风格】%s
+            【输出语言】%s
+            
+            【要求】
+            1. 提示词要详细、具体、可执行
+            2. 包含角色定义、任务描述、输出格式要求
+            3. 适当加入约束条件和示例
+            4. 输出格式应为可直接使用的提示词文本
+            5. 不要添加"以下是生成的提示词"等说明，直接输出提示词内容
+            """, goal, typeDesc, style, lang);
+    }
+    
+    private String generateWithAI(String systemPrompt, String userPrompt) {
+        Map<String, Object> requestBody = new LinkedHashMap<>();
+        
+        List<Map<String, String>> messages = new ArrayList<>();
+        messages.add(new LinkedHashMap<String, String>() {{ put("role", "system"); put("content", systemPrompt); }});
+        messages.add(new LinkedHashMap<String, String>() {{ put("role", "user"); put("content", userPrompt); }});
+        
+        requestBody.put("messages", messages);
+        requestBody.put("model", model);
+        requestBody.put("temperature", 0.7);
+        requestBody.put("max_tokens", 2000);
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(apiKey);
+        
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+        
+        ResponseEntity<String> response = restTemplate.postForEntity(apiUrl, request, String.class);
+        
+        try {
+            JsonNode root = objectMapper.readTree(response.getBody());
+            JsonNode choices = root.get("choices");
+            
+            if (choices != null && choices.isArray() && choices.size() > 0) {
+                return choices.get(0).get("message").get("content").asText();
+            }
+        } catch (Exception e) {
+            log.error("解析API响应失败: {}", e.getMessage());
+        }
+        
+        throw new RuntimeException("API返回格式异常：无法解析choices");
     }
     
     private String generateLocalPrompt(String goal, String type, String style, String language) {
         String isZh = "zh".equals(language) ? "zh" : "en";
         
-        if ("agent".equals(type)) {
-            return generateOpenClawPrompt(goal, style, isZh);
-        } else if ("writing".equals(type)) {
-            return generateWritingPrompt(goal, style, isZh);
-        } else if ("coding".equals(type)) {
-            return generateCodingPrompt(goal, style, isZh);
-        } else if ("analysis".equals(type)) {
-            return generateAnalysisPrompt(goal, style, isZh);
-        } else {
-            return generateGeneralPrompt(goal, style, isZh);
-        }
+        return switch (type) {
+            case "agent" -> generateOpenClawPrompt(goal, style, isZh);
+            case "writing" -> generateWritingPrompt(goal, style, isZh);
+            case "coding" -> generateCodingPrompt(goal, style, isZh);
+            case "analysis" -> generateAnalysisPrompt(goal, style, isZh);
+            default -> generateGeneralPrompt(goal, style, isZh);
+        };
     }
     
     private String generateOpenClawPrompt(String goal, String style, String isZh) {
@@ -139,14 +302,14 @@ public class PromptService {
         } else {
             return "## 🤖 OpenClaw AI Agent Workflow Prompt\n\n### Task Goal\n" + resolvedGoal + "\n\n---\n\n### 📋 Standard Nine-Phase Workflow\n\n" +
                 "You are an autonomous AI software engineering Agent, strictly following this nine-phase closed loop:\n\n" +
-                "**Phase 1: Requirements Analysis**\n- Understand user requirements\n- Define functional boundaries\n- Identify core use cases\n\n" +
-                "**Phase 2: Technical Design**\n- Technical stack decisions\n- Architecture design\n- Database design\n- API specifications\n\n" +
-                "**Phase 3: Code Development**\n- Environment setup\n- Implementation\n- Code review\n\n" +
-                "**Phase 4: Functional Testing**\n- Write test cases\n- Execute tests\n- Fix defects\n\n" +
-                "**Phase 5: Project Management**\n- Progress tracking\n- Risk assessment\n- Resource coordination\n\n" +
-                "**Phase 6: Documentation Output**\n- Operation manual\n- Technical documentation\n\n" +
-                "**Phase 7: Project Delivery**\n- Deployment\n- Delivery checklist\n- Acceptance confirmation\n\n" +
-                "---\n\n### 📊 Output Requirements\n\nEach phase must output structured logs containing:\n- Timestamp\n- Phase name\n- Task description\n- Action taken\n- Result\n- Risk assessment\n- Next steps\n\n### ⚠️ Constraints\n\n1. Strictly follow nine-phase workflow\n2. Delivery must include complete documentation\n3. Execute tests and fix defects autonomously\n4. Reports must be structured and clear\n5. Code must be runnable and deployable";
+                "**Phase 1: Requirements Analysis** - Understand user requirements, define functional boundaries, identify core use cases\n\n" +
+                "**Phase 2: Technical Design** - Technical stack decisions, architecture design, database design, API specifications\n\n" +
+                "**Phase 3: Code Development** - Environment setup, implementation, code review\n\n" +
+                "**Phase 4: Functional Testing** - Write test cases, execute tests, fix defects\n\n" +
+                "**Phase 5: Project Management** - Progress tracking, risk assessment, resource coordination\n\n" +
+                "**Phase 6: Documentation Output** - Operation manual, technical documentation\n\n" +
+                "**Phase 7: Project Delivery** - Deployment, delivery checklist, acceptance confirmation\n\n" +
+                "---\n\n### 📊 Output Requirements\n\nEach phase must output structured logs containing: Timestamp, Phase name, Task description, Action taken, Result, Risk assessment, Next steps\n\n### ⚠️ Constraints\n\n1. Strictly follow nine-phase workflow\n2. Delivery must include complete documentation\n3. Execute tests and fix defects autonomously\n4. Reports must be structured and clear\n5. Code must be runnable and deployable";
         }
     }
     
@@ -182,6 +345,9 @@ public class PromptService {
         }
     }
     
+    /**
+     * 获取预置模板列表
+     */
     public List<PromptTemplate> getDefaultTemplates() {
         List<PromptTemplate> templates = new ArrayList<>();
         
