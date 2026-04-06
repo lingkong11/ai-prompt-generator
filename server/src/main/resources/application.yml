@@ -5,16 +5,37 @@ spring:
   application:
     name: ai-prompt-generator
   
+  datasource:
+    url: jdbc:h2:mem:prompt-generator;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+  
   h2:
     console:
       enabled: true
+      path: /h2-console
 
-# AI API配置（可选，不配置时使用本地模板）
+# AI API配置
 ai:
   api:
     url: https://api.deepseek.com/v1/chat/completions
-    key: ${DP_AI_API_KEY:}
+    key: sk-febb9cff00d8425cbe071049e57d9dbd
   model: deepseek-chat
+
+# JWT配置
+jwt:
+  secret: ai-prompt-generator-jwt-secret-key-very-long-string-for-security-2026
+  expiration: 86400000
 
 logging:
   level:
