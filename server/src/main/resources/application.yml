@@ -13,7 +13,7 @@ spring:
 ai:
   api:
     url: https://api.deepseek.com/v1/chat/completions
-    key: sk-febb9cff00d8425cbe071049e57d9dbd
+    key: ${DP_AI_API_KEY:}
   model: deepseek-chat
 
 logging:
