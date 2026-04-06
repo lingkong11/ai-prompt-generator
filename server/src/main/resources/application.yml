@@ -1,0 +1,24 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: ai-prompt-generator
+  
+  h2:
+    console:
+      enabled: true
+
+# AI API配置（可选，不配置时使用本地模板）
+ai:
+  api:
+    url: https://api.deepseek.com/v1/chat/completions
+    key: ${DP_AI_API_KEY:}
+  model: deepseek-chat
+
+logging:
+  level:
+    root: INFO
+    com.ai.prompt: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
