@@ -1,6 +1,6 @@
-<template>
+﻿<template>
   <div class="app-container">
-    <!-- 头部 -->
+    <!-- 澶撮儴 -->
     <el-header class="header">
       <div class="logo" @click="router.push('/')">
         <el-icon :size="28"><MagicStick /></el-icon>
@@ -8,10 +8,10 @@
       </div>
       <div class="header-tabs">
         <el-tabs v-model="activeTab" @tab-change="handleTabChange">
-          <el-tab-pane label="🔮 提示词生成" name="generate" />
-          <el-tab-pane label="📁 提示词管理" name="prompts" />
-          <el-tab-pane label="📂 分类管理" name="categories" />
-          <el-tab-pane label="⭐ 收藏" name="favorites" />
+          <el-tab-pane label="馃敭 鎻愮ず璇嶇敓鎴? name="generate" />
+          <el-tab-pane label="馃搧 鎻愮ず璇嶇鐞? name="prompts" />
+          <el-tab-pane label="馃搨 鍒嗙被绠＄悊" name="categories" />
+          <el-tab-pane label="猸?鏀惰棌" name="favorites" />
         </el-tabs>
       </div>
       <div class="user-info">
@@ -23,15 +23,15 @@
           </span>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="profile">个人资料</el-dropdown-item>
-              <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+              <el-dropdown-item command="profile">涓汉璧勬枡</el-dropdown-item>
+              <el-dropdown-item command="logout" divided>閫€鍑虹櫥褰?/el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
       </div>
     </el-header>
 
-    <!-- 主内容：HomeView -->
+    <!-- 涓诲唴瀹癸細HomeView -->
     <el-main class="main">
       <HomeView />
     </el-main>
@@ -49,8 +49,8 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-// 根据query参数确定当前Tab
-const tabNames = ['generate', 'prompts', 'categories', 'favorites']
+// 鏍规嵁query鍙傛暟纭畾褰撳墠Tab
+const tabNames = ['generate', 'prompts', 'categories', 'favorites', 'openclaw']
 const activeTab = computed(() => {
   const tab = (route.query.tab as string) || 'generate'
   return tabNames.includes(tab) ? tab : 'generate'
@@ -66,7 +66,7 @@ const handleUserCommand = (cmd: string) => {
     router.push('/login')
   }
   if (cmd === 'profile') {
-    ElMessage.info('个人资料功能开发中...')
+    ElMessage.info('涓汉璧勬枡鍔熻兘寮€鍙戜腑...')
   }
 }
 </script>
@@ -88,3 +88,4 @@ const handleUserCommand = (cmd: string) => {
 
 .main { padding: 24px; flex: 1; overflow-y: auto; background: transparent; }
 </style>
+
