@@ -121,17 +121,18 @@ public class AuthController {
             
             String token = jwtUtils.generateToken(request.getUsername());
             
+            Map<String, Object> userMap = new HashMap<>();
+            userMap.put("id", user.getId());
+            userMap.put("username", user.getUsername());
+            userMap.put("email", user.getEmail());
+            userMap.put("nickname", user.getNickname());
+            userMap.put("avatar", user.getAvatar());
+            
             Map<String, Object> response = new HashMap<>();
             response.put("timestamp", timestamp);
             response.put("status", "success");
             response.put("token", token);
-            response.put("user", Map.of(
-                "id", user.getId(),
-                "username", user.getUsername(),
-                "email", user.getEmail(),
-                "nickname", user.getNickname(),
-                "avatar", user.getAvatar()
-            ));
+            response.put("user", userMap);
             
             log.info("[时间戳:{}] [阶段:Controller] [任务:登录成功] - username:{}", timestamp, request.getUsername());
             return ResponseEntity.ok(response);
@@ -159,13 +160,13 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("error", "用户不存在"));
         }
         
-        return ResponseEntity.ok(Map.of(
-            "id", user.getId(),
-            "username", user.getUsername(),
-            "email", user.getEmail(),
-            "nickname", user.getNickname(),
-            "avatar", user.getAvatar()
-        ));
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("id", user.getId());
+        userMap.put("username", user.getUsername());
+        userMap.put("email", user.getEmail());
+        userMap.put("nickname", user.getNickname());
+        userMap.put("avatar", user.getAvatar());
+        return ResponseEntity.ok(userMap);
     }
     
     @Data
