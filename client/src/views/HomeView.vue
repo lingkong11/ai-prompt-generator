@@ -248,25 +248,17 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-// 根据路由确定当前Tab
-const tabRouteMap: Record<string, string> = {
-  'generate': 'generate',
-  'prompts': 'prompts',
-  'categories': 'categories',
-  'favorites': 'favorites'
-}
-const routeToTab = (path: string) => {
-  const segment = path.split('/').pop() || 'generate'
-  return tabRouteMap[segment] || 'generate'
-}
-const activeTab = ref(routeToTab(route.fullPath))
+// 根据query参数确定当前Tab
+const tabNames = ['generate', 'prompts', 'categories', 'favorites']
+const activeTab = ref((route.query.tab as string) || 'generate')
 
-watch(() => route.fullPath, (path) => {
-  activeTab.value = routeToTab(path)
+watch(() => route.query.tab, (tab) => {
+  activeTab.value = (tab as string) || 'generate'
+  initTab(activeTab.value)
 })
 
 watch(activeTab, (tab) => {
-  router.push('/' + tab)
+  router.push({ path: '/', query: { tab } })
 })
 
 // 生成相关
@@ -397,9 +389,12 @@ const formatDate = (dateStr: string) => {
 }
 
 // 初始化加载
-if (activeTab.value === 'prompts') loadPrompts()
-if (activeTab.value === 'favorites') loadFavorites()
-if (activeTab.value === 'categories') loadCategories()
+const initTab = (tab: string) => {
+  if (tab === 'prompts') loadPrompts()
+  if (tab === 'favorites') loadFavorites()
+  if (tab === 'categories') loadCategories()
+}
+initTab(activeTab.value)
 </script>
 
 <style scoped>

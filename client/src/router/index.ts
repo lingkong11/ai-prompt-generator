@@ -5,6 +5,13 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
+      path: '/',
+      component: () => import('@/App.vue'),
+      children: [
+        { path: '', name: 'Generate', component: () => import('@/views/HomeView.vue') }
+      ]
+    },
+    {
       path: '/login',
       name: 'Login',
       component: () => import('@/views/LoginView.vue')
@@ -13,16 +20,9 @@ const router = createRouter({
       path: '/register',
       name: 'Register',
       component: () => import('@/views/RegisterView.vue')
-    },
-    {
-      // 所有其他路径都由App.vue处理（认证检查+布局）
-      path: '/:pathMatch(.*)*',
-      redirect: '/'
     }
   ]
 })
 
-// 初始化axios
 initAxios()
-
 export default router

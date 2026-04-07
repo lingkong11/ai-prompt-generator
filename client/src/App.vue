@@ -39,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
@@ -49,28 +49,16 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-// Tab到路由的映射
-const tabRouteMap: Record<string, string> = {
-  'generate': '/generate',
-  'prompts': '/prompts',
-  'categories': '/categories',
-  'favorites': '/favorites'
-}
-
-// 根据路由确定当前Tab
-const routeToTab = (path: string) => {
-  const segment = path.split('/').pop() || 'generate'
-  return (['generate', 'prompts', 'categories', 'favorites'].includes(segment) ? segment : 'generate')
-}
-const activeTab = ref(routeToTab(route.fullPath))
-
-watch(() => route.fullPath, (path) => {
-  activeTab.value = routeToTab(path)
+// 根据query参数确定当前Tab
+const tabNames = ['generate', 'prompts', 'categories', 'favorites']
+const activeTab = computed(() => {
+  const tab = (route.query.tab as string) || 'generate'
+  return tabNames.includes(tab) ? tab : 'generate'
 })
 
-watch(activeTab, (tab) => {
-  router.push('/' + tab)
-})
+const handleTabChange = (tab: string) => {
+  router.push({ path: '/', query: { tab } })
+}
 
 const handleUserCommand = (cmd: string) => {
   if (cmd === 'logout') {
