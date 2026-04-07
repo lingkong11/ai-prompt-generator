@@ -30,7 +30,7 @@ public class CategoryController {
     public ResponseEntity<?> getCategories(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
         List<Category> categories = categoryRepository.findByUserIdOrderBySortOrderAsc(user.getId());
-        return ResponseEntity.ok(Map.of("categories", categories));
+        return ResponseEntity.ok(categories);
     }
     
     @PostMapping
@@ -49,11 +49,7 @@ public class CategoryController {
         
         Category saved = categoryRepository.save(category);
         
-        return ResponseEntity.ok(Map.of(
-            "timestamp", timestamp,
-            "status", "success",
-            "category", saved
-        ));
+        return ResponseEntity.ok(saved);
     }
     
     @PutMapping("/{id}")
@@ -73,10 +69,7 @@ public class CategoryController {
                 
                 Category updated = categoryRepository.save(category);
                 
-                return ResponseEntity.ok(Map.of(
-                    "status", "success",
-                    "category", updated
-                ));
+                return ResponseEntity.ok(updated);
             })
             .orElse(ResponseEntity.notFound().build());
     }
