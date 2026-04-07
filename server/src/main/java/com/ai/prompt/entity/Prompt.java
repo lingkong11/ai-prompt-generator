@@ -1,5 +1,6 @@
 package com.ai.prompt.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -10,6 +11,7 @@ import java.time.LocalDateTime;
 @Data
 @Entity
 @Table(name = "prompts")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Prompt {
     
     @Id
@@ -36,6 +38,7 @@ public class Prompt {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private User user;
     
     @ManyToOne(fetch = FetchType.LAZY)
