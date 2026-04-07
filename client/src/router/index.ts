@@ -1,29 +1,33 @@
-﻿import { createRouter, createWebHistory } from 'vue-router'
-import { initAxios } from '@/api/auth'
+import { createRouter, createWebHistory } from 'vue-router'
+import HomeView from '@/views/HomeView.vue'
+import LoginView from '@/views/LoginView.vue'
+import RegisterView from '@/views/RegisterView.vue'
+import OpenClawView from '@/views/OpenClawView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
-      path: '/',
-      component: () => import('@/App.vue'),
-      children: [
-        { path: '', name: 'Generate', component: () => import('@/views/HomeView.vue') },
-        { path: '/openclaw', name: 'OpenClaw', component: () => import('@/views/OpenClawView.vue') }
-      ]
-    },
-    {
       path: '/login',
       name: 'Login',
-      component: () => import('@/views/LoginView.vue')
+      component: LoginView
     },
     {
       path: '/register',
       name: 'Register',
-      component: () => import('@/views/RegisterView.vue')
+      component: RegisterView
+    },
+    {
+      path: '/',
+      name: 'Home',
+      component: HomeView
+    },
+    {
+      path: '/openclaw',
+      name: 'OpenClaw',
+      component: OpenClawView
     }
   ]
 })
 
-initAxios()
 export default router
