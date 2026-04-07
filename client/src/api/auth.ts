@@ -2,6 +2,9 @@ import axios from 'axios'
 
 const API_BASE = '/api'
 
+// 设置全局超时（防止请求永远挂起）
+axios.defaults.timeout = 10000
+
 // 获取本地存储的token
 export const getToken = () => localStorage.getItem('prompt_token')
 
