@@ -1,6 +1,7 @@
 export default {
   app: {
     title: 'AI Prompt Generator',
+    tabHome: '🏠 Home',
     tabGenerate: '🔮 Generate',
     tabTemplates: '📁 Templates',
     tabOpenClaw: '🤖 OpenClaw',
@@ -175,6 +176,61 @@ export default {
     themeLight: '☀️ Light',
     themeDark: '🌙 Dark',
     themePurple: '💜 Purple',
+  },
+  // Hero Section
+  hero: {
+    title: 'AI Prompt Generator',
+    subtitle: 'Make AI understand your intent better',
+    desc: 'Using advanced prompt engineering techniques to generate optimized prompts for ChatGPT, Claude, Gemini and other mainstream AI models. Get better responses every time.',
+    startNow: 'Start Now',
+    viewTemplates: 'Browse Templates',
+    badgeFree: '🎁 Free to Use',
+    badgeAI: '🤖 AI-Powered',
+    badgeMultiModel: '🌐 Multi-Model Support',
+  },
+  // Features Section
+  features: {
+    title: 'Core Features',
+    subtitle: 'Powerful yet simple, making prompt creation efficient',
+    f1Title: 'Smart Generation',
+    f1Desc: 'Enter your goal, AI automatically generates structured, high-quality prompts with various types and styles.',
+    f2Title: 'Template Library',
+    f2Desc: 'Curated prompt templates covering writing, coding, analysis and more. One-click to apply.',
+    f3Title: 'AI Optimization',
+    f3Desc: 'Using prompt engineering techniques to optimize instruction structure, context, and constraints.',
+    f4Title: 'OpenClaw Zone',
+    f4Desc: '14-stage prompt templates designed for OpenClaw Agent, covering the entire software development lifecycle.',
+    f5Title: 'Collection Management',
+    f5Desc: 'Save frequently used prompts, organize by category, quick reuse to boost productivity.',
+    f6Title: 'Multi-Model Support',
+    f6Desc: 'Support ChatGPT, Claude, Gemini, DeepSeek and more mainstream models with targeted optimization.',
+  },
+  // Steps Section
+  steps: {
+    title: 'How to Use',
+    subtitle: 'Four simple steps to generate perfect prompts',
+    s1Title: 'Describe Goal',
+    s1Desc: 'Use natural language to describe the task you want AI to complete.',
+    s2Title: 'Choose Type',
+    s2Desc: 'Select prompt type and style, AI will optimize automatically.',
+    s3Title: 'Generate',
+    s3Desc: 'Click generate to get optimized high-quality prompts.',
+    s4Title: 'Copy & Use',
+    s4Desc: 'Copy to clipboard and paste into any AI tool.',
+  },
+  // FAQ Section
+  faq: {
+    title: 'FAQ',
+    q1: 'Is this tool free?',
+    a1: 'Yes! Basic features are completely free. No registration needed to try. Unlock save and favorites after signing up.',
+    q2: 'Which AI models are supported?',
+    a2: 'All mainstream AI models including ChatGPT, Claude, Gemini, DeepSeek, LLaMA and more.',
+    q3: 'Can I use generated prompts directly?',
+    a3: 'Absolutely! Generated prompts are already optimized. Just copy and paste into any AI tool.',
+    q4: 'What is OpenClaw Zone?',
+    a4: 'OpenClaw is an AI Agent framework. We designed 14-stage prompt templates for software development.',
+    q5: 'Do I need to learn prompt engineering?',
+    a5: 'No! The tool automatically applies best practices, making it easy for anyone to create quality prompts.',
   },
   // Pricing
   pricing: {

@@ -9,6 +9,7 @@
 
       <div class="nav-tabs">
         <el-tabs v-model="activeTab">
+          <el-tab-pane :label="t.app.tabHome" name="home" />
           <el-tab-pane :label="t.app.tabGenerate" name="generate" />
           <el-tab-pane :label="t.app.tabTemplates" name="templates" />
           <el-tab-pane :label="t.app.tabOpenClaw" name="openclaw" />
@@ -70,6 +71,35 @@
 
     <!-- Main -->
     <el-main class="app-main">
+
+      <!-- Home -->
+      <div v-if="activeTab === 'home'" class="page-section home-page">
+        <HeroSection @start="activeTab = 'generate'" @view-templates="activeTab = 'templates'" />
+        <FeaturesSection />
+        <StepsSection />
+        
+        <!-- FAQ -->
+        <div class="faq-section">
+          <h2 class="section-title">{{ t.faq.title }}</h2>
+          <el-collapse>
+            <el-collapse-item :title="t.faq.q1" name="1">
+              <p>{{ t.faq.a1 }}</p>
+            </el-collapse-item>
+            <el-collapse-item :title="t.faq.q2" name="2">
+              <p>{{ t.faq.a2 }}</p>
+            </el-collapse-item>
+            <el-collapse-item :title="t.faq.q3" name="3">
+              <p>{{ t.faq.a3 }}</p>
+            </el-collapse-item>
+            <el-collapse-item :title="t.faq.q4" name="4">
+              <p>{{ t.faq.a4 }}</p>
+            </el-collapse-item>
+            <el-collapse-item :title="t.faq.q5" name="5">
+              <p>{{ t.faq.a5 }}</p>
+            </el-collapse-item>
+          </el-collapse>
+        </div>
+      </div>
 
       <!-- Generate -->
       <div v-if="activeTab === 'generate'" class="page-section">
@@ -323,11 +353,14 @@ import { useAppStore } from '@/stores/app'
 import { generatePrompt, getFavorites, getTemplates, createPrompt, toggleFavorite, getPrompts, deletePrompt } from '@/api/prompts'
 import AuthModal from '@/components/AuthModal.vue'
 import PricingView from '@/views/PricingView.vue'
+import HeroSection from '@/components/home/HeroSection.vue'
+import FeaturesSection from '@/components/home/FeaturesSection.vue'
+import StepsSection from '@/components/home/StepsSection.vue'
 
 const authStore = useAuthStore()
 const appStore = useAppStore()
 const t = computed(() => appStore.t)
-const activeTab = ref('generate')
+const activeTab = ref('home')
 
 const stageIcons = ['📋','🎨','⚙️','💻','🧪','🔍','📚','🚀','📊']
 
@@ -549,6 +582,14 @@ watch(activeTab, (tab) => {
 .fav-content { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; max-height: 80px; overflow: hidden; }
 .fav-actions { display: flex; gap: 8px; }
 .detail-content { white-space: pre-wrap; word-wrap: break-word; background: #f5f7fa; padding: 12px; border-radius: 4px; font-size: 13px; max-height: 300px; overflow-y: auto; }
+/* Home Page */
+.home-page { padding: 0 !important; background: transparent; }
+.home-page > * { margin-bottom: 0; }
+.faq-section { max-width: 800px; margin: 60px auto 0; padding: 0 40px; }
+.faq-section .section-title { font-size: 32px; font-weight: 700; text-align: center; margin-bottom: 32px; color: var(--text-primary); }
+.faq-section :deep(.el-collapse) { border: none; }
+.faq-section :deep(.el-collapse-item__header) { font-size: 16px; font-weight: 600; padding: 20px 0; border-bottom: 1px solid #e5e7eb; }
+.faq-section :deep(.el-collapse-item__content) { padding: 16px 0; font-size: 15px; color: var(--text-secondary); line-height: 1.6; }
 /* Footer */
 .app-footer { padding: 0; flex-shrink: 0; }
 .footer-content { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: var(--footer-bg); border-top: 1px solid var(--footer-border); color: var(--footer-text); font-size: 13px; }

@@ -1,6 +1,7 @@
 export default {
   app: {
     title: 'AI Prompt Generator',
+    tabHome: '🏠 首頁',
     tabGenerate: '🔮 提示詞生成',
     tabTemplates: '📁 模板庫',
     tabOpenClaw: '🤖 OpenClaw專用',
@@ -175,6 +176,61 @@ export default {
     themeLight: '☀️ 亮色',
     themeDark: '🌙 暗色',
     themePurple: '💜 紫色',
+  },
+  // Hero Section
+  hero: {
+    title: 'AI 提示詞生成器',
+    subtitle: '讓 AI 更懂你的意圖',
+    desc: '運用先進提示詞工程技術，為 ChatGPT、Claude、Gemini 等主流 AI 模型生成優化提示詞，每次都能獲得更好的回答效果。',
+    startNow: '立即開始',
+    viewTemplates: '瀏覽模板庫',
+    badgeFree: '🎁 免費使用',
+    badgeAI: '🤖 AI 驅動優化',
+    badgeMultiModel: '🌐 多模型支援',
+  },
+  // Features Section
+  features: {
+    title: '核心功能',
+    subtitle: '強大而簡潔，讓提示詞創作更高效',
+    f1Title: '智能生成',
+    f1Desc: '輸入目標，AI 自動生成結構化、高質量的提示詞，支援多種類型和風格。',
+    f2Title: '模板庫',
+    f2Desc: '精選提示詞模板，覆蓋寫作、程式設計、分析等場景，一鍵應用快速開始。',
+    f3Title: 'AI 優化',
+    f3Desc: '運用提示詞工程技術，自動優化指令結構、上下文、約束條件。',
+    f4Title: 'OpenClaw 專區',
+    f4Desc: '專為 OpenClaw Agent 設計的 14 個階段提示詞，覆蓋軟體開發全流程。',
+    f5Title: '收藏管理',
+    f5Desc: '保存常用提示詞，分類管理，快速復用，提升工作效率。',
+    f6Title: '多模型適配',
+    f6Desc: '支援 ChatGPT、Claude、Gemini、DeepSeek 等主流模型，針對性優化。',
+  },
+  // Steps Section
+  steps: {
+    title: '如何使用',
+    subtitle: '四個簡單步驟，生成完美提示詞',
+    s1Title: '描述目標',
+    s1Desc: '用自然語言描述你想要 AI 完成的任務。',
+    s2Title: '選擇類型',
+    s2Desc: '選擇提示詞類型和風格，AI 會自動優化。',
+    s3Title: '生成優化',
+    s3Desc: '點擊生成，獲得經過優化的高質量提示詞。',
+    s4Title: '複製使用',
+    s4Desc: '複製到剪貼簿，貼上到任意 AI 工具中使用。',
+  },
+  // FAQ Section
+  faq: {
+    title: '常見問題',
+    q1: '這個工具是免費的嗎？',
+    a1: '是的！基礎功能完全免費，無需註冊即可體驗。註冊後可解鎖保存、收藏等進階功能。',
+    q2: '支援哪些 AI 模型？',
+    a2: '支援 ChatGPT、Claude、Gemini、DeepSeek、LLaMA 等所有主流 AI 模型。',
+    q3: '生成的提示詞可以直接使用嗎？',
+    a3: '當然可以！生成的提示詞已經過優化，直接複製貼上到任意 AI 工具即可使用。',
+    q4: '什麼是 OpenClaw 專區？',
+    a4: 'OpenClaw 是一個 AI Agent 框架，我們為其設計了 14 個階段的軟體開發提示詞模板。',
+    q5: '需要學習提示詞工程嗎？',
+    a5: '不需要！工具會自動應用最佳實踐，讓任何人都能輕鬆創建高質量提示詞。',
   },
   // Pricing
   pricing: {

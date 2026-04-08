@@ -2,6 +2,7 @@ export default {
   // Header
   app: {
     title: 'AI Prompt Generator',
+    tabHome: '🏠 首页',
     tabGenerate: '🔮 提示词生成',
     tabTemplates: '📁 模板库',
     tabOpenClaw: '🤖 OpenClaw专用',
@@ -187,6 +188,61 @@ export default {
     themeLight: '☀️ 亮色',
     themeDark: '🌙 暗色',
     themePurple: '💜 紫色',
+  },
+  // Hero Section
+  hero: {
+    title: 'AI 提示词生成器',
+    subtitle: '让 AI 更懂你的意图',
+    desc: '运用先进提示词工程技术，为 ChatGPT、Claude、Gemini 等主流 AI 模型生成优化提示词，每次都能获得更好的回答效果。',
+    startNow: '立即开始',
+    viewTemplates: '浏览模板库',
+    badgeFree: '🎁 免费使用',
+    badgeAI: '🤖 AI 驱动优化',
+    badgeMultiModel: '🌐 多模型支持',
+  },
+  // Features Section
+  features: {
+    title: '核心功能',
+    subtitle: '强大而简洁，让提示词创作更高效',
+    f1Title: '智能生成',
+    f1Desc: '输入目标，AI 自动生成结构化、高质量的提示词，支持多种类型和风格。',
+    f2Title: '模板库',
+    f2Desc: '精选提示词模板，覆盖写作、编程、分析等场景，一键应用快速开始。',
+    f3Title: 'AI 优化',
+    f3Desc: '运用提示词工程技术，自动优化指令结构、上下文、约束条件。',
+    f4Title: 'OpenClaw 专区',
+    f4Desc: '专为 OpenClaw Agent 设计的 14 个阶段提示词，覆盖软件开发全流程。',
+    f5Title: '收藏管理',
+    f5Desc: '保存常用提示词，分类管理，快速复用，提升工作效率。',
+    f6Title: '多模型适配',
+    f6Desc: '支持 ChatGPT、Claude、Gemini、DeepSeek 等主流模型，针对性优化。',
+  },
+  // Steps Section
+  steps: {
+    title: '如何使用',
+    subtitle: '四个简单步骤，生成完美提示词',
+    s1Title: '描述目标',
+    s1Desc: '用自然语言描述你想要 AI 完成的任务。',
+    s2Title: '选择类型',
+    s2Desc: '选择提示词类型和风格，AI 会自动优化。',
+    s3Title: '生成优化',
+    s3Desc: '点击生成，获得经过优化的高质量提示词。',
+    s4Title: '复制使用',
+    s4Desc: '复制到剪贴板，粘贴到任意 AI 工具中使用。',
+  },
+  // FAQ Section
+  faq: {
+    title: '常见问题',
+    q1: '这个工具是免费的吗？',
+    a1: '是的！基础功能完全免费，无需注册即可体验。注册后可解锁保存、收藏等高级功能。',
+    q2: '支持哪些 AI 模型？',
+    a2: '支持 ChatGPT、Claude、Gemini、DeepSeek、LLaMA 等所有主流 AI 模型。',
+    q3: '生成的提示词可以直接使用吗？',
+    a3: '当然可以！生成的提示词已经过优化，直接复制粘贴到任意 AI 工具即可使用。',
+    q4: '什么是 OpenClaw 专区？',
+    a4: 'OpenClaw 是一个 AI Agent 框架，我们为其设计了 14 个阶段的软件开发提示词模板。',
+    q5: '需要学习提示词工程吗？',
+    a5: '不需要！工具会自动应用最佳实践，让任何人都能轻松创建高质量提示词。',
   },
   // Pricing
   pricing: {
