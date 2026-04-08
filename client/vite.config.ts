@@ -12,10 +12,6 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 3001,
-    headers: {
-      // Force UTF-8 for all .vue file requests
-      'Content-Type': 'text/javascript; charset=UTF-8'
-    },
     proxy: {
       '/api': {
         target: 'http://localhost:8082',
