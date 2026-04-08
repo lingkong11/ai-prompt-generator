@@ -588,8 +588,33 @@ watch(activeTab, (tab) => {
 .faq-section { max-width: 800px; margin: 60px auto 0; padding: 0 40px; }
 .faq-section .section-title { font-size: 32px; font-weight: 700; text-align: center; margin-bottom: 32px; color: var(--text-primary); }
 .faq-section :deep(.el-collapse) { border: none; }
-.faq-section :deep(.el-collapse-item__header) { font-size: 16px; font-weight: 600; padding: 20px 0; border-bottom: 1px solid #e5e7eb; }
-.faq-section :deep(.el-collapse-item__content) { padding: 16px 0; font-size: 15px; color: var(--text-secondary); line-height: 1.6; }
+.faq-section :deep(.el-collapse-item) { margin-bottom: 12px; }
+.faq-section :deep(.el-collapse-item__header) { 
+  font-size: 16px; 
+  font-weight: 600; 
+  padding: 20px 24px; 
+  border-radius: 12px;
+  background: var(--card-bg);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+.faq-section :deep(.el-collapse-item__header:hover) { 
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+.faq-section :deep(.el-collapse-item__wrap) { 
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  background: var(--card-bg);
+  margin-top: -8px;
+  padding-top: 8px;
+}
+.faq-section :deep(.el-collapse-item__content) { 
+  padding: 16px 24px 24px; 
+  font-size: 15px; 
+  color: var(--text-secondary); 
+  line-height: 1.6; 
+}
 /* Footer */
 .app-footer { padding: 0; flex-shrink: 0; }
 .footer-content { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: var(--footer-bg); border-top: 1px solid var(--footer-border); color: var(--footer-text); font-size: 13px; }

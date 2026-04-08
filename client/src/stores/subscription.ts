@@ -119,10 +119,12 @@ export const useSubscriptionStore = defineStore('subscription', () => {
   }
 
   // Initialize
-  async function init() {
-    await fetchPlans()
-    await fetchCurrentSubscription()
-    await fetchQuotaStatus()
+  async function init(isLoggedIn: boolean = false) {
+    await fetchPlans() // 公开接口，游客也可访问
+    if (isLoggedIn) {
+      await fetchCurrentSubscription()
+      await fetchQuotaStatus()
+    }
   }
 
   return {

@@ -89,12 +89,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useAppStore } from '@/stores/app'
+import { useAuthStore } from '@/stores/auth'
 import { useSubscriptionStore, type BillingCycle, type Plan } from '@/stores/subscription'
 import PricingCard from '@/components/pricing/PricingCard.vue'
 import BillingToggle from '@/components/pricing/BillingToggle.vue'
 import PricingFAQ from '@/components/pricing/PricingFAQ.vue'
 
 const appStore = useAppStore()
+const authStore = useAuthStore()
 const subscriptionStore = useSubscriptionStore()
 
 const t = computed(() => appStore.t)
@@ -112,7 +114,7 @@ const enterpriseForm = ref({
 })
 
 onMounted(() => {
-  subscriptionStore.init()
+  subscriptionStore.init(authStore.isLoggedIn)
 })
 
 function handleUpgrade(planCode: string) {
