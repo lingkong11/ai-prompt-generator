@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { register, login, getCurrentUser, clearToken, setToken } from '@/api/auth'
+import { register, login, getCurrentUser, clearToken, setToken, updateProfile } from '@/api/auth'
 
 /**
  * 认证状态管理
@@ -70,6 +70,13 @@ export const useAuthStore = defineStore('auth', () => {
     clearToken()
   }
 
+  /** 更新个人资料 */
+  const updateUserProfile = async (data: { nickname?: string; avatar?: string }) => {
+    const res = await updateProfile(data)
+    user.value = res.data.data
+    return res.data.data
+  }
+
   // ========== 游客引导方法 ==========
 
   /**
@@ -124,6 +131,7 @@ export const useAuthStore = defineStore('auth', () => {
     registerUser,
     loginUser,
     logout,
+    updateUserProfile,
     // 游客引导
     showAuthModal,
     authModalMode,

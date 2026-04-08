@@ -137,18 +137,51 @@ public class AuthController {
         return ResponseEntity.ok(ApiResult.success(buildUserMap(user)));
     }
 
+    /**
+     * 更新当前用户资料（昵称 / 头像）
+     */
+    @PutMapping("/profile")
+    public ResponseEntity<ApiResult<?>> updateProfile(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @Valid @RequestBody UpdateProfileRequest request) {
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(401).body(ApiResult.unauthorized("未登录"));
+        }
+        String token = authHeader.substring(7);
+        if (!jwtUtils.validateToken(token)) {
+            return ResponseEntity.status(401).body(ApiResult.unauthorized("Token 已过期或无效"));
+        }
+
+        String username = jwtUtils.getUsernameFromToken(token);
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(401).body(ApiResult.unauthorized("用户不存在"));
+        }
+
+        if (request.getNickname() != null) {
+            user.setNickname(request.getNickname().trim());
+        }
+        if (request.getAvatar() != null) {
+            user.setAvatar(request.getAvatar().trim());
+        }
+
+        User saved = userRepository.save(user);
+        log.info("资料更新成功: userId={}", saved.getId());
+
+        return ResponseEntity.ok(ApiResult.success(buildUserMap(saved)));
+    }
+
     /* ========== 内部工具 ========== */
 
-    /**
-     * 从 User 实体提取对外展示字段，避免直接序列化实体
-     */
     private Map<String, Object> buildUserMap(User user) {
         return Map.of(
                 "id", user.getId(),
                 "username", user.getUsername(),
                 "email", user.getEmail(),
                 "nickname", user.getNickname(),
-                "avatar", user.getAvatar() != null ? user.getAvatar() : ""
+                "avatar", user.getAvatar() != null ? user.getAvatar() : "",
+                "createdAt", user.getCreatedAt() != null ? user.getCreatedAt().toString() : ""
         );
     }
 
@@ -178,5 +211,11 @@ public class AuthController {
 
         @NotBlank(message = "密码不能为空")
         private String password;
+    }
+
+    @Data
+    public static class UpdateProfileRequest {
+        private String nickname;
+        private String avatar;
     }
 }

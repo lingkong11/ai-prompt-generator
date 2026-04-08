@@ -93,6 +93,10 @@ export const login = (data: { username: string; password: string }) =>
 /** 获取当前登录用户信息 */
 export const getCurrentUser = () => http.get('/auth/me')
 
+/** 更新个人资料（昵称 / 头像） */
+export const updateProfile = (data: { nickname?: string; avatar?: string }) =>
+  http.put('/auth/profile', data)
+
 /** 退出登录（纯前端清理） */
 export const logout = () => {
   clearToken()
