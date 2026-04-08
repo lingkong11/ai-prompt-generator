@@ -1,5 +1,6 @@
 package com.ai.prompt.controller;
 
+import com.ai.prompt.common.ApiResult;
 import com.ai.prompt.entity.User;
 import com.ai.prompt.repository.UserRepository;
 import com.ai.prompt.security.JwtUtils;
@@ -15,182 +16,166 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 认证控制器
+ * 认证接口
+ *
+ * <p>提供用户注册、登录、当前用户信息查询三大能力。
+ * 注册和登录成功后签发 JWT，前端后续请求通过 Authorization 头携带 Token。</p>
+ *
+ * <h3>认证流程</h3>
+ * <ol>
+ *   <li>客户端提交用户名 + 密码（注册还需邮箱）</li>
+ *   <li>服务端校验参数唯一性（用户名 / 邮箱不可重复）</li>
+ *   <li>密码经 BCrypt 哈希后落库（登录时通过 {@code matches} 比对）</li>
+ *   <li>返回 JWT + 用户摘要信息</li>
+ * </ol>
  */
 @Slf4j
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
-    
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
-    
+
+    /**
+     * 用户注册
+     *
+     * <p>校验用户名与邮箱的唯一性，通过后对明文密码做 BCrypt 哈希并持久化，
+     * 最后签发 JWT 直接完成登录态初始化。</p>
+     */
     @Transactional
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
-        log.info("[时间戳:{}] [阶段:Controller] [任务:用户注册] [动作:register] - username:{}", timestamp, request.getUsername());
-        
+    public ResponseEntity<ApiResult<?>> register(@Valid @RequestBody RegisterRequest request) {
+        log.info("用户注册: username={}", request.getUsername());
+
         if (userRepository.existsByUsername(request.getUsername())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "用户名已存在"));
+            return ResponseEntity.badRequest().body(ApiResult.badRequest("用户名已存在"));
         }
-        
+
         if (userRepository.existsByEmail(request.getEmail())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "邮箱已被注册"));
+            return ResponseEntity.badRequest().body(ApiResult.badRequest("邮箱已被注册"));
         }
-        
+
         User user = new User();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        String encodedPassword = passwordEncoder.encode(request.getPassword());
-        user.setPassword(encodedPassword);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setNickname(request.getNickname() != null ? request.getNickname() : request.getUsername());
-        
-        log.info("[时间戳:{}] [阶段:Controller] [任务:保存用户] - username:{} passwordHash:{}", timestamp, user.getUsername(), encodedPassword.substring(0, 30) + "...");
-        
-        User savedUser = userRepository.save(user);
-        
-        log.info("[时间戳:{}] [阶段:Controller] [任务:用户已保存] - userId:{} username:{}", timestamp, savedUser.getId(), savedUser.getUsername());
-        
-        // 验证保存
-        User verifyUser = userRepository.findById(savedUser.getId()).orElse(null);
-        log.info("[时间戳:{}] [阶段:Controller] [任务:验证保存] - found:{} passwordHash:{}", 
-            timestamp, verifyUser != null, verifyUser != null ? verifyUser.getPassword().substring(0, 30) + "..." : "null");
-        
-        String token = jwtUtils.generateToken(user.getUsername());
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", timestamp);
-        response.put("status", "success");
-        response.put("message", "注册成功");
-        response.put("token", token);
-        response.put("user", Map.of(
-            "id", savedUser.getId(),
-            "username", savedUser.getUsername(),
-            "email", savedUser.getEmail(),
-            "nickname", savedUser.getNickname()
-        ));
-        
-        return ResponseEntity.ok(response);
+
+        User saved = userRepository.save(user);
+        String token = jwtUtils.generateToken(saved.getUsername());
+
+        log.info("注册成功: userId={}, username={}", saved.getId(), saved.getUsername());
+        return ResponseEntity.ok(ApiResult.success(Map.of(
+                "token", token,
+                "user", buildUserMap(saved)
+        )));
     }
-    
+
+    /**
+     * 用户登录
+     *
+     * <p>根据用户名查找记录，BCrypt 比对密码，匹配后签发新 JWT。
+     * 登录失败统一返回 401，不暴露具体原因（用户不存在 vs 密码错误使用相同文案）。</p>
+     */
     @Transactional(readOnly = true)
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
-        log.info("[时间戳:{}] [阶段:Controller] [任务:用户登录] [动作:login] - username:{}", timestamp, request.getUsername());
-        
-        try {
-            // 检查userRepository是否注入
-            log.info("[时间戳:{}] [阶段:Controller] [任务:检查Repository] - userRepository:{}", timestamp, userRepository != null ? "已注入" : "null");
-            
-            // 查询所有用户
-            var allUsers = userRepository.findAll();
-            log.info("[时间戳:{}] [阶段:Controller] [任务:所有用户] - count:{} users:{}", timestamp, allUsers.size(), allUsers);
-            
-            // 直接验证用户
-            var userOpt = userRepository.findByUsername(request.getUsername());
-            log.info("[时间戳:{}] [阶段:Controller] [任务:查找用户] - found:{}", timestamp, userOpt.isPresent());
-            
-            if (userOpt.isEmpty()) {
-                log.warn("[时间戳:{}] [阶段:Controller] [任务:用户不存在] - username:{}", timestamp, request.getUsername());
-                return ResponseEntity.status(401).body(Map.of("error", "用户不存在", "username", request.getUsername()));
-            }
-            
-            User user = userOpt.get();
-            
-            String rawPassword = request.getPassword();
-            String encodedPassword = user.getPassword();
-            boolean matches = passwordEncoder.matches(rawPassword, encodedPassword);
-            
-            log.info("[时间戳:{}] [阶段:Controller] [任务:密码验证] - matches:{}", timestamp, matches);
-            
-            // 验证密码
-            if (!matches) {
-                log.warn("[时间戳:{}] [阶段:Controller] [任务:密码错误] - username:{}", timestamp, request.getUsername());
-                return ResponseEntity.status(401).body(Map.of("error", "密码错误"));
-            }
-            
-            String token = jwtUtils.generateToken(request.getUsername());
-            
-            Map<String, Object> userMap = new HashMap<>();
-            userMap.put("id", user.getId());
-            userMap.put("username", user.getUsername());
-            userMap.put("email", user.getEmail());
-            userMap.put("nickname", user.getNickname());
-            userMap.put("avatar", user.getAvatar());
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("timestamp", timestamp);
-            response.put("status", "success");
-            response.put("token", token);
-            response.put("user", userMap);
-            
-            log.info("[时间戳:{}] [阶段:Controller] [任务:登录成功] - username:{}", timestamp, request.getUsername());
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("[时间戳:{}] [阶段:Controller] [任务:登录异常] [动作:error] - username:{} error:{}", timestamp, request.getUsername(), e.getMessage(), e);
-            return ResponseEntity.status(401).body(Map.of("error", "登录失败: " + e.getMessage()));
+    public ResponseEntity<ApiResult<?>> login(@Valid @RequestBody LoginRequest request) {
+        log.info("用户登录: username={}", request.getUsername());
+
+        var userOpt = userRepository.findByUsername(request.getUsername());
+        if (userOpt.isEmpty()) {
+            log.warn("登录失败-用户不存在: username={}", request.getUsername());
+            return ResponseEntity.status(401).body(ApiResult.unauthorized("用户名或密码错误"));
         }
+
+        User user = userOpt.get();
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            log.warn("登录失败-密码错误: username={}", request.getUsername());
+            return ResponseEntity.status(401).body(ApiResult.unauthorized("用户名或密码错误"));
+        }
+
+        String token = jwtUtils.generateToken(user.getUsername());
+        log.info("登录成功: username={}", request.getUsername());
+        return ResponseEntity.ok(ApiResult.success(Map.of(
+                "token", token,
+                "user", buildUserMap(user)
+        )));
     }
-    
+
+    /**
+     * 查询当前登录用户信息
+     *
+     * <p>从请求头提取 Bearer Token，验证有效性后返回用户摘要资料。
+     * 匿名访问（无 Authorization 头或 Token 过期/无效）返回 401。</p>
+     */
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+    public ResponseEntity<ApiResult<?>> getCurrentUser(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(401).body(Map.of("error", "未登录"));
+            return ResponseEntity.status(401).body(ApiResult.unauthorized("未登录"));
         }
-        
+
         String token = authHeader.substring(7);
         if (!jwtUtils.validateToken(token)) {
-            return ResponseEntity.status(401).body(Map.of("error", "token无效"));
+            return ResponseEntity.status(401).body(ApiResult.unauthorized("Token 已过期或无效"));
         }
-        
+
         String username = jwtUtils.getUsernameFromToken(token);
         User user = userRepository.findByUsername(username).orElse(null);
-        
+
         if (user == null) {
-            return ResponseEntity.status(401).body(Map.of("error", "用户不存在"));
+            return ResponseEntity.status(401).body(ApiResult.unauthorized("用户不存在"));
         }
-        
-        Map<String, Object> userMap = new HashMap<>();
-        userMap.put("id", user.getId());
-        userMap.put("username", user.getUsername());
-        userMap.put("email", user.getEmail());
-        userMap.put("nickname", user.getNickname());
-        userMap.put("avatar", user.getAvatar());
-        return ResponseEntity.ok(userMap);
+
+        return ResponseEntity.ok(ApiResult.success(buildUserMap(user)));
     }
-    
+
+    /* ========== 内部工具 ========== */
+
+    /**
+     * 从 User 实体提取对外展示字段，避免直接序列化实体
+     */
+    private Map<String, Object> buildUserMap(User user) {
+        return Map.of(
+                "id", user.getId(),
+                "username", user.getUsername(),
+                "email", user.getEmail(),
+                "nickname", user.getNickname(),
+                "avatar", user.getAvatar() != null ? user.getAvatar() : ""
+        );
+    }
+
+    /* ========== DTO ========== */
+
     @Data
     public static class RegisterRequest {
         @NotBlank(message = "用户名不能为空")
-        @Size(min = 3, max = 50, message = "用户名长度3-50")
+        @Size(min = 3, max = 50, message = "用户名长度 3~50")
         private String username;
-        
+
         @NotBlank(message = "邮箱不能为空")
         @Email(message = "邮箱格式不正确")
         private String email;
-        
+
         @NotBlank(message = "密码不能为空")
-        @Size(min = 6, max = 100, message = "密码长度6-100")
+        @Size(min = 6, max = 100, message = "密码长度 6~100")
         private String password;
-        
+
         private String nickname;
     }
-    
+
     @Data
     public static class LoginRequest {
         @NotBlank(message = "用户名不能为空")
         private String username;
-        
+
         @NotBlank(message = "密码不能为空")
         private String password;
     }

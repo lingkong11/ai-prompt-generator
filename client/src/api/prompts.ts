@@ -1,8 +1,14 @@
-import axios from 'axios'
+/**
+ * 提示词 & 分类 API
+ *
+ * <p>使用 auth.ts 导出的 http 实例，自动携带 Token 和错误拦截。
+ * 所有方法返回 Promise<AxiosResponse>，调用方通过 try/catch 处理异常。</p>
+ */
 
-const API_BASE = '/api'
+import http from '@/api/auth'
 
-// 创建提示词
+// ========== 提示词 CRUD ==========
+
 export const createPrompt = (data: {
   title: string
   content: string
@@ -12,81 +18,48 @@ export const createPrompt = (data: {
   goal?: string
   tags?: string
   categoryId?: number
-}) => {
-  return axios.post(`${API_BASE}/prompts`, data)
-}
+}) => http.post('/prompts', data)
 
-// 获取提示词列表
 export const getPrompts = (params?: {
   page?: number
   size?: number
   type?: string
   keyword?: string
-}) => {
-  return axios.get(`${API_BASE}/prompts`, { params })
-}
+}) => http.get('/prompts', { params })
 
-// 获取单个提示词
-export const getPrompt = (id: number) => {
-  return axios.get(`${API_BASE}/prompts/${id}`)
-}
+export const getPrompt = (id: number) => http.get(`/prompts/${id}`)
 
-// 更新提示词
-export const updatePrompt = (id: number, data: any) => {
-  return axios.put(`${API_BASE}/prompts/${id}`, data)
-}
+export const updatePrompt = (id: number, data: any) => http.put(`/prompts/${id}`, data)
 
-// 删除提示词
-export const deletePrompt = (id: number) => {
-  return axios.delete(`${API_BASE}/prompts/${id}`)
-}
+export const deletePrompt = (id: number) => http.delete(`/prompts/${id}`)
 
-// 切换收藏
-export const toggleFavorite = (id: number) => {
-  return axios.post(`${API_BASE}/prompts/${id}/favorite`)
-}
+export const toggleFavorite = (id: number) => http.post(`/prompts/${id}/favorite`)
 
-// 获取收藏列表
-export const getFavorites = () => {
-  return axios.get(`${API_BASE}/prompts/favorites`)
-}
+export const getFavorites = () => http.get('/prompts/favorites')
 
-// 增加使用次数
-export const incrementUseCount = (id: number) => {
-  return axios.post(`${API_BASE}/prompts/${id}/use`)
-}
+export const incrementUseCount = (id: number) => http.post(`/prompts/${id}/use`)
 
-// 生成提示词（旧接口，Phase 0）
+// ========== Prompt 生成 ==========
+
 export const generatePrompt = (data: {
   goal: string
   type: string
   style?: string
   language?: string
-}) => {
-  return axios.post(`${API_BASE}/prompt/generate`, data)
-}
+}) => http.post('/prompt/generate', data)
 
-// 获取模板
-export const getTemplates = () => {
-  return axios.get(`${API_BASE}/prompt/templates`)
-}
+export const getTemplates = () => http.get('/prompt/templates')
 
-// 获取分类列表
-export const getCategories = () => {
-  return axios.get(`${API_BASE}/categories`)
-}
+// ========== 分类 CRUD ==========
 
-// 创建分类
-export const createCategory = (data: { name: string; icon?: string; description?: string }) => {
-  return axios.post(`${API_BASE}/categories`, data)
-}
+export const getCategories = () => http.get('/categories')
 
-// 更新分类
-export const updateCategory = (id: number, data: any) => {
-  return axios.put(`${API_BASE}/categories/${id}`, data)
-}
+export const createCategory = (data: {
+  name: string
+  icon?: string
+  description?: string
+}) => http.post('/categories', data)
 
-// 删除分类
-export const deleteCategory = (id: number) => {
-  return axios.delete(`${API_BASE}/categories/${id}`)
-}
+export const updateCategory = (id: number, data: any) => http.put(`/categories/${id}`, data)
+
+export const deleteCategory = (id: number) => http.delete(`/categories/${id}`)
