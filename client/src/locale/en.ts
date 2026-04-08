@@ -5,6 +5,7 @@ export default {
     tabTemplates: '📁 Templates',
     tabOpenClaw: '🤖 OpenClaw',
     tabFavorites: '⭐ Favorites',
+    tabPricing: '💎 Pricing',
     tabMyPrompts: '📋 My Prompts',
     login: 'Login',
     register: 'Register',

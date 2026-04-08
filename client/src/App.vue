@@ -13,6 +13,7 @@
           <el-tab-pane :label="t.app.tabTemplates" name="templates" />
           <el-tab-pane :label="t.app.tabOpenClaw" name="openclaw" />
           <el-tab-pane :label="t.app.tabFavorites" name="favorites" />
+          <el-tab-pane :label="t.app.tabPricing" name="pricing" />
         </el-tabs>
       </div>
 
@@ -200,6 +201,11 @@
         </el-card>
       </div>
 
+      <!-- Pricing -->
+      <div v-if="activeTab === 'pricing'" class="page-section">
+        <PricingView />
+      </div>
+
       <!-- My Prompts -->
       <div v-if="activeTab === 'my-prompts'" class="page-section">
         <el-card>
@@ -316,6 +322,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { generatePrompt, getFavorites, getTemplates, createPrompt, toggleFavorite, getPrompts, deletePrompt } from '@/api/prompts'
 import AuthModal from '@/components/AuthModal.vue'
+import PricingView from '@/views/PricingView.vue'
 
 const authStore = useAuthStore()
 const appStore = useAppStore()

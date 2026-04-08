@@ -5,6 +5,7 @@ export default {
     tabTemplates: '📁 模板庫',
     tabOpenClaw: '🤖 OpenClaw專用',
     tabFavorites: '⭐ 收藏',
+    tabPricing: '💎 定價',
     tabMyPrompts: '📋 我的提示詞',
     login: '登入',
     register: '註冊',
