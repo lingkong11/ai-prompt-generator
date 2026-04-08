@@ -81,8 +81,12 @@ public class SubscriptionController {
     }
 
     private Long extractUserId(UserDetails userDetails) {
-        // 从 JWT 或 UserDetails 中提取用户ID
-        // 简化实现：假设 username 就是 userId
-        return Long.valueOf(userDetails.getUsername());
+        // 从 JWT 认证的 UserDetails 中提取用户ID
+        // JwtAuthenticationFilter 将 User 实体作为 principal
+        if (userDetails instanceof com.ai.prompt.entity.User) {
+            return ((com.ai.prompt.entity.User) userDetails).getId();
+        }
+        // 兜底：查库获取用户ID
+        throw new IllegalStateException("无法从认证信息中获取用户ID");
     }
 }
