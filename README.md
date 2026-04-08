@@ -136,7 +136,3 @@ public class OpenAiProvider implements AiProvider {
 }
 ```
 
-## 文档
-
-- [测试报告](docs/TEST_REPORT.md)
-- [架构设计](docs/ARCHITECTURE.md)
