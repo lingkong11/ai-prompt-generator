@@ -1,13 +1,8 @@
 <template>
-  <!-- 未登录：显示路由页面（Login / Register） -->
-  <div v-if="!authStore.isLoggedIn" class="auth-layout">
-    <router-view />
-  </div>
-
-  <!-- 已登录：带导航的主框架 -->
-  <div v-else class="app-container">
+  <div class="app-container">
+    <!-- Header -->
     <el-header class="app-header">
-      <div class="logo" @click="$router.push('/')">
+      <div class="logo" @click="activeTab = 'generate'">
         <el-icon :size="28"><MagicStick /></el-icon>
         <span>AI Prompt Generator</span>
       </div>
@@ -21,23 +16,33 @@
         </el-tabs>
       </div>
 
+      <!-- 用户区域 -->
       <div class="user-area">
-        <el-dropdown @command="handleUserCommand">
-          <span class="user-trigger">
-            <el-avatar :size="32" :icon="UserFilled" />
-            <span class="username">{{ authStore.user?.username }}</span>
-            <el-icon><ArrowDown /></el-icon>
-          </span>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="profile">个人资料</el-dropdown-item>
-              <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+        <!-- 已登录 -->
+        <template v-if="authStore.isLoggedIn">
+          <el-dropdown @command="handleUserCommand">
+            <span class="user-trigger">
+              <el-avatar :size="32" :icon="UserFilled" />
+              <span class="username">{{ authStore.user?.username }}</span>
+              <el-icon><ArrowDown /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="profile">个人资料</el-dropdown-item>
+                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </template>
+        <!-- 未登录 -->
+        <template v-else>
+          <el-button text @click="authStore.openLoginModal()">登录</el-button>
+          <el-button type="primary" @click="authStore.openRegisterModal()">注册</el-button>
+        </template>
       </div>
     </el-header>
 
+    <!-- Main -->
     <el-main class="app-main">
       <!-- 提示词生成 -->
       <div v-if="activeTab === 'generate'" class="page-section">
@@ -80,6 +85,10 @@
                   <el-button @click="genForm.goal = ''; genResult = ''">重置</el-button>
                 </el-form-item>
               </el-form>
+              <!-- 游客提示 -->
+              <el-alert v-if="!authStore.isLoggedIn" type="info" :closable="false" style="margin-top: 12px">
+                💡 注册后可保存、收藏、管理你的提示词
+              </el-alert>
             </el-card>
           </el-col>
 
@@ -89,7 +98,7 @@
                 <div class="flex-between">
                   <span>✨ 生成结果</span>
                   <div v-if="genResult" class="btn-group">
-                    <el-button size="small" type="primary" @click="openSaveDialog">
+                    <el-button size="small" type="primary" @click="handleSave">
                       <el-icon><DocumentAdd /></el-icon> 保存
                     </el-button>
                     <el-button size="small" @click="copyToClipboard(genResult)">
@@ -110,12 +119,7 @@
       <!-- 模板库 -->
       <div v-if="activeTab === 'templates'" class="page-section">
         <el-card>
-          <template #header>
-            <div class="flex-between">
-              <span>📁 预置模板库</span>
-              <el-button size="small" :icon="Refresh" @click="loadTemplates">刷新</el-button>
-            </div>
-          </template>
+          <template #header><span>📁 预置模板库</span></template>
           <el-row :gutter="20">
             <el-col :xs="24" :sm="12" :lg="8" v-for="tpl in templateList" :key="tpl.name">
               <el-card class="tpl-card" shadow="hover" @click="applyTemplate(tpl)">
@@ -123,14 +127,11 @@
                 <div class="tpl-name">{{ tpl.name }}</div>
                 <div class="tpl-desc">{{ tpl.description }}</div>
                 <div class="tpl-tags">
-                  <el-tag v-for="tag in (tpl.tags || '').split(',')" :key="tag" size="small">
-                    {{ tag }}
-                  </el-tag>
+                  <el-tag v-for="tag in (tpl.tags || '').split(',')" :key="tag" size="small">{{ tag }}</el-tag>
                 </div>
               </el-card>
             </el-col>
           </el-row>
-          <el-empty v-if="templateList.length === 0" description="暂无模板" />
         </el-card>
       </div>
 
@@ -154,12 +155,7 @@
       <!-- 收藏 -->
       <div v-if="activeTab === 'favorites'" class="page-section">
         <el-card>
-          <template #header>
-            <div class="flex-between">
-              <span>⭐ 我的收藏</span>
-              <el-button size="small" :icon="Refresh" @click="loadFavorites">刷新</el-button>
-            </div>
-          </template>
+          <template #header><span>⭐ 我的收藏</span></template>
           <el-table :data="favoriteList" stripe v-if="favoriteList.length > 0">
             <el-table-column prop="title" label="标题" min-width="150" />
             <el-table-column prop="type" label="类型" width="100">
@@ -182,7 +178,7 @@
       </div>
     </el-main>
 
-    <!-- 保存提示词对话框 -->
+    <!-- 保存对话框 -->
     <el-dialog v-model="saveDialogVisible" title="保存提示词" width="500px">
       <el-form label-width="80px">
         <el-form-item label="标题">
@@ -203,22 +199,22 @@
       </el-form>
       <template #footer>
         <el-button @click="saveDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saveLoading" @click="handleSavePrompt">保存</el-button>
+        <el-button type="primary" :loading="saveLoading" @click="handleConfirmSave">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 认证弹窗 -->
+    <AuthModal />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { generatePrompt, getFavorites, getTemplates, createPrompt, toggleFavorite } from '@/api/prompts'
-import { Refresh } from '@element-plus/icons-vue'
+import AuthModal from '@/components/AuthModal.vue'
 
-const router = useRouter()
-const route = useRoute()
 const authStore = useAuthStore()
 const activeTab = ref('generate')
 
@@ -227,17 +223,28 @@ const genLoading = ref(false)
 const genResult = ref('')
 const genForm = reactive({ goal: '', type: 'general', style: '专业', language: 'zh' })
 
-const handleGenerate = async () => {
+const handleGenerate = () => {
   if (!genForm.goal) { ElMessage.warning('请输入目标描述'); return }
-  genLoading.value = true
-  try {
-    const res = await generatePrompt(genForm)
-    genResult.value = res.data.data.prompt
-    ElMessage.success('生成成功')
-  } catch (e: any) {
-    const msg = e.response?.data?.message || e.response?.data?.error || e.message || '生成失败'
-    ElMessage.error(msg)
-  } finally { genLoading.value = false }
+  authStore.requireAuth(async () => {
+    genLoading.value = true
+    try {
+      const res = await generatePrompt(genForm)
+      genResult.value = res.data.data.prompt
+      ElMessage.success('生成成功')
+    } catch (e: any) {
+      ElMessage.error(e.response?.data?.message || '生成失败')
+    } finally { genLoading.value = false }
+  })
+}
+
+const handleSave = () => {
+  if (!genResult.value) return
+  authStore.requireAuth(() => {
+    saveForm.content = genResult.value
+    saveForm.title = genForm.goal.substring(0, 50) || '未命名提示词'
+    saveForm.type = genForm.type
+    saveDialogVisible.value = true
+  })
 }
 
 // ========== 模板库 ==========
@@ -248,7 +255,6 @@ const loadTemplates = async () => {
     const res = await getTemplates()
     templateList.value = res.data.data?.templates || []
   } catch {
-    // 后端失败时使用本地默认模板
     templateList.value = [
       { name: 'OpenClaw九阶段工作流', category: 'openclaw', description: 'AI Agent标准九阶段开发流程', tags: 'openclaw,workflow' },
       { name: '文章写作助手', category: 'writing', description: '专业文章写作提示词', tags: '写作,文章' },
@@ -267,7 +273,7 @@ const categoryIcon = (cat: string) => {
 const applyTemplate = (tpl: any) => {
   genForm.type = tpl.category
   activeTab.value = 'generate'
-  ElMessage.success(`已选择模板：${tpl.name}，请输入你的目标后生成`)
+  ElMessage.success(`已选择模板：${tpl.name}`)
 }
 
 // ========== OpenClaw九阶段 ==========
@@ -287,17 +293,19 @@ const applyOpenClawStage = (item: any) => {
   genForm.type = 'agent'
   genForm.goal = item.goal
   activeTab.value = 'generate'
-  ElMessage.success(`已选择 ${item.title}，目标已填入，可直接生成`)
+  ElMessage.success(`已选择 ${item.title}，目标已填入`)
 }
 
 // ========== 收藏 ==========
 const favoriteList = ref<any[]>([])
 
-const loadFavorites = async () => {
-  try {
-    const res = await getFavorites()
-    favoriteList.value = res.data.data?.prompts || []
-  } catch { favoriteList.value = [] }
+const loadFavorites = () => {
+  authStore.requireAuth(async () => {
+    try {
+      const res = await getFavorites()
+      favoriteList.value = res.data.data?.prompts || []
+    } catch { favoriteList.value = [] }
+  })
 }
 
 const handleUnfavorite = async (row: any) => {
@@ -316,14 +324,7 @@ const saveDialogVisible = ref(false)
 const saveLoading = ref(false)
 const saveForm = reactive({ title: '', type: 'general', content: '' })
 
-const openSaveDialog = () => {
-  saveForm.content = genResult.value
-  saveForm.title = genForm.goal.substring(0, 50) || '未命名提示词'
-  saveForm.type = genForm.type
-  saveDialogVisible.value = true
-}
-
-const handleSavePrompt = async () => {
+const handleConfirmSave = async () => {
   if (!saveForm.title || !saveForm.content) { ElMessage.warning('请填写标题和内容'); return }
   saveLoading.value = true
   try {
@@ -343,35 +344,27 @@ const copyToClipboard = (text?: string) => {
 }
 
 const handleUserCommand = (cmd: string) => {
-  if (cmd === 'logout') {
-    authStore.logout()
-    router.push('/login')
-  }
-  if (cmd === 'profile') {
-    ElMessage.info('个人资料功能开发中...')
-  }
+  if (cmd === 'logout') authStore.logout()
+  if (cmd === 'profile') ElMessage.info('个人资料功能开发中...')
 }
 
-// ========== Tab 切换加载数据 ==========
-watch(activeTab, (tab) => {
-  if (tab === 'templates') loadTemplates()
+const handleTabChange = (tab: string) => {
   if (tab === 'favorites') loadFavorites()
-})
-
-// 初始化
-authStore.init()
-if (!authStore.isLoggedIn) {
-  router.push('/login')
-} else {
-  loadTemplates()
 }
+
+// ========== 初始化 ==========
+authStore.init()
+loadTemplates()
+
+// 同步 Tab 状态（收藏 TAB 需登录）
+watch(activeTab, (tab) => {
+  if (tab === 'favorites' && !authStore.isLoggedIn) {
+    authStore.openLoginModal()
+  }
+})
 </script>
 
 <style scoped>
-.auth-layout {
-  height: 100vh;
-}
-
 .app-container {
   height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -401,56 +394,27 @@ if (!authStore.isLoggedIn) {
 }
 
 .nav-tabs { flex: 1; }
-
-.user-area { flex-shrink: 0; }
-
-.user-trigger {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
+.user-area { flex-shrink: 0; display: flex; gap: 8px; }
+.user-trigger { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 .username { font-size: 14px; }
 
-.app-main {
-  padding: 24px;
-  flex: 1;
-  overflow-y: auto;
-  background: transparent;
-}
-
+.app-main { padding: 24px; flex: 1; overflow-y: auto; background: transparent; }
 .input-card, .output-card { min-height: 420px; }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
 .btn-group { display: flex; gap: 8px; }
 
 .result-box pre {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  background: #f5f7fa;
-  padding: 16px;
-  border-radius: 8px;
-  max-height: 360px;
-  overflow-y: auto;
-  font-size: 13px;
-  line-height: 1.6;
+  white-space: pre-wrap; word-wrap: break-word;
+  background: #f5f7fa; padding: 16px; border-radius: 8px;
+  max-height: 360px; overflow-y: auto; font-size: 13px; line-height: 1.6;
 }
 
-.tpl-card {
-  margin-bottom: 20px;
-  cursor: pointer;
-  transition: transform 0.3s;
-}
+.tpl-card { margin-bottom: 20px; cursor: pointer; transition: transform 0.3s; }
 .tpl-card:hover { transform: translateY(-4px); }
-
 .tpl-icon { font-size: 32px; text-align: center; margin-bottom: 12px; }
 .tpl-name { font-weight: bold; text-align: center; margin-bottom: 8px; }
 .tpl-desc { font-size: 12px; color: #666; text-align: center; margin-bottom: 12px; }
 .tpl-tags { display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; }
 
-.text-preview {
-  font-size: 12px; color: #666;
-  max-width: 300px; overflow: hidden;
-  text-overflow: ellipsis; white-space: nowrap;
-}
+.text-preview { font-size: 12px; color: #666; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
