@@ -59,8 +59,10 @@ http.interceptors.response.use(
 
       if (status === 401) {
         clearToken()
-        _routerPush?.('/login')
-        ElMessage.error('登录已过期，请重新登录')
+        // Guest: show message, don't redirect (no /login route anymore)
+        if (!getToken()) {
+          ElMessage.error('登录已过期，请重新登录')
+        }
       } else if (status === 403) {
         ElMessage.error('无权限访问')
       } else if (status >= 500) {
