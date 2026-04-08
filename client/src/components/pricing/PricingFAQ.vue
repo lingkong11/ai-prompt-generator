@@ -65,17 +65,37 @@ const faqItems = computed(() => [
   border: none;
 }
 
+:deep(.el-collapse-item) {
+  margin-bottom: 12px;
+}
+
 :deep(.el-collapse-item__header) {
   font-size: 16px;
   font-weight: 600;
-  padding: 20px 0;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 20px 24px;
+  border-radius: 12px;
+  background: var(--card-bg);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+:deep(.el-collapse-item__header:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.el-collapse-item__wrap) {
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  background: var(--card-bg);
+  margin-top: -8px;
+  padding-top: 8px;
 }
 
 :deep(.el-collapse-item__content) {
-  padding: 16px 0;
+  padding: 16px 24px 24px;
   font-size: 15px;
-  color: #6b7280;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 </style>
