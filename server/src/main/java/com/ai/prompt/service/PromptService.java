@@ -1,5 +1,6 @@
 package com.ai.prompt.service;
 
+import com.ai.prompt.common.QuotaExceededException;
 import com.ai.prompt.dto.GenerateRequest;
 import com.ai.prompt.dto.PromptDTO;
 import com.ai.prompt.dto.PromptSaveRequest;
@@ -39,6 +40,7 @@ public class PromptService {
     private final AiProvider aiProvider;
     private final PromptRepository promptRepository;
     private final CategoryRepository categoryRepository;
+    private final SubscriptionService subscriptionService;
 
     // 线程安全的调用计数器
     private final AtomicInteger totalCalls = new AtomicInteger(0);
@@ -50,12 +52,19 @@ public class PromptService {
     /**
      * 根据用户输入生成提示词
      *
-     * <p>优先通过 AI 大模型生成，失败时降级到本地模板引擎。</p>
+     * <p>优先通过 AI 大模型生成，失败时降级到本地模板引擎。
+     * 生成前检查用户配额，配额不足时抛出异常。</p>
      *
+     * @param userId  用户ID（用于配额校验）
      * @param request 包含 goal / type / style / language 的请求
      * @return 生成的提示词文本
+     * @throws QuotaExceededException 配额不足时抛出
      */
-    public String generatePrompt(GenerateRequest request) {
+    public String generatePrompt(Long userId, GenerateRequest request) {
+        // 检查并消耗生成配额
+        if (!subscriptionService.consumeGenerateQuota(userId)) {
+            throw new QuotaExceededException("今日生成次数已用完，请升级套餐");
+        }
         totalCalls.incrementAndGet();
         log.info("生成提示词: goal={}, type={}, aiConfigured={}",
                 request.getGoal(), request.getType(), aiProvider.isConfigured());

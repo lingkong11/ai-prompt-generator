@@ -1,6 +1,7 @@
 package com.ai.prompt.controller;
 
 import com.ai.prompt.common.ApiResult;
+import com.ai.prompt.common.QuotaExceededException;
 import com.ai.prompt.dto.GenerateRequest;
 import com.ai.prompt.dto.TestPromptRequest;
 import com.ai.prompt.service.PromptService;
@@ -8,6 +9,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -47,13 +50,15 @@ public class PromptController {
      */
     @PostMapping("/generate")
     public ResponseEntity<ApiResult<Map<String, Object>>> generate(
+            @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody GenerateRequest request) {
 
         long start = System.currentTimeMillis();
         log.info("生成提示词: goal={}, type={}", request.getGoal(), request.getType());
 
         try {
-            String prompt = promptService.generatePrompt(request);
+            Long userId = userDetails != null ? Long.valueOf(userDetails.getUsername()) : 0L;
+            String prompt = promptService.generatePrompt(userId, request);
 
             Map<String, Object> data = new LinkedHashMap<>();
             data.put("prompt", prompt);
@@ -65,6 +70,10 @@ public class PromptController {
             data.put("duration", (System.currentTimeMillis() - start) + "ms");
 
             return ResponseEntity.ok(ApiResult.success(data));
+        } catch (QuotaExceededException e) {
+            log.warn("生成配额不足: {}", e.getMessage());
+            return ResponseEntity.status(403)
+                    .body(ApiResult.error(403, e.getMessage()));
         } catch (Exception e) {
             log.error("生成提示词失败: goal={}, error={}", request.getGoal(), e.getMessage());
             return ResponseEntity.status(500)
@@ -120,6 +129,7 @@ public class PromptController {
     @PostMapping("/batch")
     @SuppressWarnings("unchecked")
     public ResponseEntity<ApiResult<Map<String, Object>>> batchGenerate(
+            @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody Map<String, Object> request) {
 
         long start = System.currentTimeMillis();
@@ -130,6 +140,7 @@ public class PromptController {
 
         log.info("批量生成: count={}, type={}", goals.size(), type);
 
+        Long userId = userDetails != null ? Long.valueOf(userDetails.getUsername()) : 0L;
         List<Map<String, Object>> results = new ArrayList<>();
         for (String goal : goals) {
             try {
@@ -139,8 +150,10 @@ public class PromptController {
                 genReq.setStyle(style);
                 genReq.setLanguage(language);
 
-                String prompt = promptService.generatePrompt(genReq);
+                String prompt = promptService.generatePrompt(userId, genReq);
                 results.add(Map.of("goal", goal, "prompt", prompt, "status", "success"));
+            } catch (QuotaExceededException e) {
+                results.add(Map.of("goal", goal, "error", e.getMessage(), "status", "quota_exceeded"));
             } catch (Exception e) {
                 results.add(Map.of("goal", goal, "error", e.getMessage(), "status", "error"));
             }
